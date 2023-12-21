@@ -144,7 +144,7 @@ if st.session_state.treatment_group and st.session_state.current_round > 10:
 
 
 # At the end of your main experiment logic or after the experiment completion message
-if st.session_state.current_round > 20:
+if st.session_state.current_round == 20:
     st.write("Thank you for participating in our experiment. Your responses have been recorded.")
     
     # Convert DataFrame to CSV
