@@ -43,8 +43,8 @@ def plot_budget_line(p_x, p_y, choice_x, I):
 
 # Function to get GPT advice, now including prices
 def get_gpt_advice(participant_data):
-    # OpenAI client initialization
-    client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    # Fetch the API key from Streamlit secrets
+    api_key = st.secrets["OPENAI_API_KEY"]
 
     # System and assistant messages
     messages = [
@@ -57,7 +57,9 @@ def get_gpt_advice(participant_data):
         user_message = f"Round {row['Round']} choice: X = {row['Choice_X']}, Y = {row['Choice_Y']}, Prices: P_X = {row['P_X']}, P_Y = {row['P_Y']}, Total Income = {row['Total_Income']}"
         messages.append({"role": "user", "content": user_message})
 
-    chat_completion = client.chat.completions.create(
+    # Call the OpenAI API for a chat completion
+    chat_completion = openai.ChatCompletion.create(
+        api_key=api_key,
         messages=messages,
         model="gpt-3.5-turbo"
     )
