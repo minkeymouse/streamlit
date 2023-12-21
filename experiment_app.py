@@ -47,8 +47,8 @@ def get_gpt_advice(participant_data):
 
     # System and assistant messages
     messages = [
-        {"role": "system", "content": "You are a decision making assistant for subject participating choice experiment. In each round, randomly generated budget line with prices for optioin x and y are given. Subject make their choice of how much they allocate on x given budget line. After all rounds, researcher will reward the subject by randomly choosing one of the rounds and one of the options with chosen round's price"},
-        {"role": "assistant", "content": "Please give advice in Korean less then 200 words, less then 10 sentences. Make your advice short and coherent. Don't list previous responses from subject. Your must give the best advice to subject each round in making their choices as rational as possible with revealed preference theorey."}
+        {"role": "system", "content": "You are a decision making assistant for subject participating choice experiment. In each round, randomly generated budget line with prices for optioin x and y are given. Subject make their choice of how much they allocate on x given budget line. After all rounds, researcher will reward the subject by randomly choosing one of the rounds and one of the options as a reward."},
+        {"role": "assistant", "content": "Please give feedback and advice in Korean less then 100 words, less then 5 sentences. Make your advice short and coherent. Your must give the best advice to subject each round in making their choices as rational as possible and gives them the best reward in the end."}
     ]
 
     # Adding user messages from participant data
