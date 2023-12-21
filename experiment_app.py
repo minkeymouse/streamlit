@@ -87,61 +87,63 @@ if not st.session_state.init_done:
         st.session_state.start_time = time.time()
 
 # Main experiment logic
-if st.session_state.init_done and st.session_state.current_round <= 20:
-    st.write(f"### Round {st.session_state.current_round}")
-    st.write(f"### Treatment {st.session_state.treatment_group}")
-    
-    choice_x = st.slider("Select your x and y", 0, 100, 50, key=f"x_{st.session_state.current_round}")
-    fig = plot_budget_line(st.session_state.p_x, st.session_state.p_y, choice_x, st.session_state.total_income)
-    st.pyplot(fig)
+if st.session_state.init_done:
+    if st.session_state.current_round <= 20:
+        st.write(f"### Round {st.session_state.current_round}")
+        st.write(f"### Treatment: {'Treatment' if st.session_state.treatment_group else 'Control'}")
+        
+        choice_x = st.slider("Select your x and y", 0, 100, 50, key=f"x_{st.session_state.current_round}")
+        fig = plot_budget_line(st.session_state.p_x, st.session_state.p_y, choice_x, st.session_state.total_income)
+        st.pyplot(fig)
 
-    if st.button("Confirm choice"):
-        choice_y = (st.session_state.total_income - st.session_state.p_x * choice_x) / st.session_state.p_y
-        end_time = time.time()
-        time_taken = end_time - st.session_state.start_time
+        if st.button("Confirm choice"):
+            choice_y = (st.session_state.total_income - st.session_state.p_x * choice_x) / st.session_state.p_y
+            end_time = time.time()
+            time_taken = end_time - st.session_state.start_time
 
-        new_row = {
-            "Participant_ID": st.session_state.participant_id,
-            "Age": st.session_state.age,
-            "Sex": st.session_state.sex,
-            "Round": st.session_state.current_round,
-            "Choice_X": choice_x,
-            "Choice_Y": choice_y,
-            "P_X": st.session_state.p_x,
-            "P_Y": st.session_state.p_y,
-            "Total_Income": st.session_state.total_income,
-            "Time_Taken": time_taken,
-            "Treatment_Group": "Treatment" if st.session_state.treatment_group else "Control"
-        }
+            new_row = {
+                "Participant_ID": st.session_state.participant_id,
+                "Age": st.session_state.age,
+                "Sex": st.session_state.sex,
+                "Round": st.session_state.current_round,
+                "Choice_X": choice_x,
+                "Choice_Y": choice_y,
+                "P_X": st.session_state.p_x,
+                "P_Y": st.session_state.p_y,
+                "Total_Income": st.session_state.total_income,
+                "Time_Taken": time_taken,
+                "Treatment_Group": "Treatment" if st.session_state.treatment_group else "Control"
+            }
 
-        # Update the DataFrame with the new row
-        st.session_state.responses = pd.concat([st.session_state.responses, pd.DataFrame([new_row])])
+            # Update the DataFrame with the new row
+            st.session_state.responses = pd.concat([st.session_state.responses, pd.DataFrame([new_row])])
 
-        # Update for next round or prepare for ending the experiment
-        if st.session_state.current_round < 20:
-            st.session_state.current_round += 1
-            st.session_state.p_x, st.session_state.p_y, st.session_state.total_income = generate_budget_line()
-            st.session_state.start_time = time.time()
-        else:
-            st.write("Thank you for participating! Please download your responses.")
-            # Convert DataFrame to CSV for download
-            csv = st.session_state.responses.to_csv(index=False)
-            # Create download button
-            st.download_button(
-                label="Download your responses",
-                data=csv,
-                file_name="experiment_responses.csv",
-                mime="text/csv",
-            )
-            # Display exit message
-            st.write("Your participation has been recorded. Thank you!")
-            st.write("Please close the browser to exit.")
+            if st.session_state.current_round < 20:
+                st.session_state.current_round += 1
+                st.session_state.p_x, st.session_state.p_y, st.session_state.total_income = generate_budget_line()
+                st.session_state.start_time = time.time()
+            else:
+                # This else condition now only sets a flag to show the download button
+                st.session_state.show_download = True
 
-        if st.session_state.treatment_group and st.session_state.current_round > 10:
-            participant_data = st.session_state.responses[st.session_state.responses["Participant_ID"] == st.session_state.participant_id]
-            advice = get_gpt_advice(participant_data)
-            st.write(advice)
+            if st.session_state.treatment_group and st.session_state.current_round > 10:
+                participant_data = st.session_state.responses[st.session_state.responses["Participant_ID"] == st.session_state.participant_id]
+                advice = get_gpt_advice(participant_data)
+                st.write(advice)
 
+    # Check for the flag to show the download button
+    if st.session_state.get("show_download", False):
+        st.write("Thank you for participating! Please download your responses.")
+        # Convert DataFrame to CSV for download
+        csv = st.session_state.responses.to_csv(index=False)
+        # Create download button
+        st.download_button(
+            label="Download your responses",
+            data=csv,
+            file_name="experiment_responses.csv",
+            mime="text/csv",
+        )
+        st.session_state.show_download = False  # Reset the flag
 
 
 
