@@ -44,7 +44,7 @@ def plot_budget_line(p_x, p_y, choice_x, I):
 # Function to get GPT advice, now including prices
 def get_gpt_advice(participant_data):
     # OpenAI client initialization
-    client = openai.OpenAI(api_key="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")
+    client = openai.OpenAI(api_key=MY_API)
 
     # System and assistant messages
     messages = [
