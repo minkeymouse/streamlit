@@ -1,0 +1,154 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+import openai
+import time
+import os
+
+# Initialize session state variables
+if 'init_done' not in st.session_state:
+    st.session_state.init_done = False
+    st.session_state.current_round = 1
+    st.session_state.responses = pd.DataFrame()
+
+# Updated function to generate a random budget line
+def generate_budget_line():
+    I = random.uniform(100, 200)
+    min_px = I / 100
+    max_px = I / 50
+    p_x = random.uniform(min_px, max_px)
+    min_py = I / 100
+    max_py = I / 50
+    p_y = random.uniform(min_py, max_py)
+    return p_x, p_y, I
+
+# Function to plot the budget line with enhanced display
+def plot_budget_line(p_x, p_y, choice_x, I):
+    y = np.arange(0, 100, 0.1)
+    x = (I - p_y * y) / p_x
+    plt.plot(x, y, '-r')
+    choice_y = (I - p_x * choice_x) / p_y
+    expected_x = p_x * choice_x * 0.5
+    expected_y = p_y * choice_y * 0.5
+    plt.text(50, 50, f"Expected Outcome: \n X = {100 * expected_x:.2f} won and Y = {100 * expected_y:.2f} won \n (50% chance)", fontsize=12, fontweight='bold')
+    plt.xlim(0, 100)
+    plt.ylim(0, 100)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title(f'Move slider to choose best outcome. X price: {p_x:.2f} Y price: {p_y:.2f}')
+    plt.grid(True)
+    return plt
+
+# Function to get GPT advice, now including prices
+def get_gpt_advice(participant_data):
+    # OpenAI client initialization
+    client = openai.OpenAI(api_key="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")
+
+    # System and assistant messages
+    messages = [
+        {"role": "system", "content": "You are a decision making assistant for subject participating choice experiment. In each round, randomly generated budget line with prices for optioin x and y are given. Subject make their choice of how much they allocate on x given budget line. After all rounds, researcher will reward the subject by randomly choosing one of the rounds and one of the options with chosen round's price"},
+        {"role": "assistant", "content": "Please give advice in Korean less then 100 words, less then 5 sentences. Make your advice short and coherent. Don't list previous responses from subject. Your must give the best advice to subject each round in maximizing their final reward."}
+    ]
+
+    # Adding user messages from participant data
+    for _, row in participant_data.iterrows():
+        user_message = f"Round {row['Round']} choice: X = {row['Choice_X']}, Y = {row['Choice_Y']}, Prices: P_X = {row['P_X']}, P_Y = {row['P_Y']}, Total Income = {row['Total_Income']}"
+        messages.append({"role": "user", "content": user_message})
+
+    chat_completion = client.chat.completions.create(
+        messages=messages,
+        model="gpt-3.5-turbo"
+    )
+
+    return chat_completion.choices[0].message.content
+
+# App title and instructions
+st.title("Economic Decision Making Experiment")
+
+# Introductory page logic with unique form key
+if not st.session_state.init_done:
+    with st.form("init_form"):
+        participant_id = st.text_input("Enter your participant ID")
+        age = st.number_input("Enter your age", min_value=18, max_value=100, step=1)
+        sex = st.selectbox("Select your sex", ["Male", "Female", "Other"])
+        start_session = st.form_submit_button("Start Session")
+
+    if start_session:
+        st.session_state.participant_id = participant_id
+        st.session_state.age = age
+        st.session_state.sex = sex
+        st.session_state.init_done = True
+        st.session_state.current_round = 1
+        st.session_state.p_x, st.session_state.p_y, st.session_state.total_income = generate_budget_line()
+        st.session_state.treatment_group = random.choice([True, False])
+        st.session_state.responses = pd.DataFrame(columns=["Participant_ID", "Age", "Sex", "Round", "Choice_X", "Choice_Y", "P_X", "P_Y", "Total_Income", "Time_Taken", "Treatment_Group"])
+        st.session_state.start_time = time.time()
+
+# Main experiment logic
+if st.session_state.init_done and st.session_state.current_round <= 20:
+    st.write(f"### Round {st.session_state.current_round}")
+    st.write(f"### Treatment {st.session_state.treatment_group}")
+    
+    choice_x = st.slider("Select your x and y", 0, 100, 50, key=f"x_{st.session_state.current_round}")
+    fig = plot_budget_line(st.session_state.p_x, st.session_state.p_y, choice_x, st.session_state.total_income)
+    st.pyplot(fig)
+
+    if st.button("Confirm choice"):
+        choice_y = (st.session_state.total_income - st.session_state.p_x * choice_x) / st.session_state.p_y
+        end_time = time.time()
+        time_taken = end_time - st.session_state.start_time
+
+        new_row = {
+            "Participant_ID": st.session_state.participant_id,
+            "Age": st.session_state.age,
+            "Sex": st.session_state.sex,
+            "Round": st.session_state.current_round,
+            "Choice_X": choice_x,
+            "Choice_Y": choice_y,
+            "P_X": st.session_state.p_x,
+            "P_Y": st.session_state.p_y,
+            "Total_Income": st.session_state.total_income,
+            "Time_Taken": time_taken,
+            "Treatment_Group": "Treatment" if st.session_state.treatment_group else "Control"
+        }
+
+        # Update the DataFrame with the new row
+        st.session_state.responses = pd.concat([st.session_state.responses, pd.DataFrame([new_row])])
+
+        # Update for next round or end the experiment
+        if st.session_state.current_round < 20:
+            st.session_state.current_round += 1
+            st.session_state.p_x, st.session_state.p_y, st.session_state.total_income = generate_budget_line()
+            st.session_state.start_time = time.time()
+        else:
+            st.write("Thank you for participating!")
+            st.session_state.responses.to_csv("experiment_responses.csv", float_format='%.6f')
+            st.write("Your responses have been saved.")
+            st.stop()  # Stop the app
+
+        if st.session_state.current_round == 20:
+            # Read existing data
+            existing_data = pd.read_csv("experiment_responses.csv", float_format='%.6f') if os.path.exists("experiment_responses.csv") else pd.DataFrame()
+            # Append new data
+            updated_data = pd.concat([existing_data, st.session_state.responses])
+            # Save back to CSV
+            updated_data.to_csv("experiment_responses.csv", index=False, float_format='%.6f')
+            st.write("Your responses have been saved and appended to the existing data.")
+            st.stop()  # Stop the app
+
+        if st.session_state.treatment_group and st.session_state.current_round > 10:
+            participant_data = st.session_state.responses[st.session_state.responses["Participant_ID"] == st.session_state.participant_id]
+            advice = get_gpt_advice(participant_data)
+            st.write(advice)
+
+# Ending page logic - Enhanced for clearer completion message
+if st.session_state.current_round > 20:
+    st.write("Thank you for participating in our experiment. Your responses have been recorded. Please close the browser to exit.")
+
+
+
+
+
+
