@@ -82,7 +82,7 @@ if not st.session_state.init_done:
         st.session_state.init_done = True
         st.session_state.current_round = 1
         st.session_state.p_x, st.session_state.p_y, st.session_state.total_income = generate_budget_line()
-        st.session_state.treatment_group = random.choice([True, False])
+        st.session_state.treatment_group = True #random.choice([True, False])
         st.session_state.responses = pd.DataFrame(columns=["Participant_ID", "Age", "Sex", "Round", "Choice_X", "Choice_Y", "P_X", "P_Y", "Total_Income", "Time_Taken", "Treatment_Group"])
         st.session_state.start_time = time.time()
 
