@@ -133,16 +133,14 @@ if st.session_state.init_done and st.session_state.current_round <= 20:
                 file_name="experiment_responses.csv",
                 mime="text/csv",
             )
-            st.session_state.current_round += 1  # Increment to move past round 20
+            # Display exit message
+            st.write("Your participation has been recorded. Thank you!")
+            st.write("Please close the browser to exit.")
 
         if st.session_state.treatment_group and st.session_state.current_round > 10:
             participant_data = st.session_state.responses[st.session_state.responses["Participant_ID"] == st.session_state.participant_id]
             advice = get_gpt_advice(participant_data)
             st.write(advice)
-
-    elif st.session_state.current_round > 20:
-        st.write("Your participation has been recorded. Thank you!")
-        st.write("Please close the browser to exit.")
 
 
 
