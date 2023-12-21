@@ -129,16 +129,6 @@ if st.session_state.init_done and st.session_state.current_round <= 20:
             st.write("Your responses have been saved.")
             st.stop()  # Stop the app
 
-        if st.session_state.current_round == 20:
-            # Read existing data
-            existing_data = pd.read_csv("experiment_responses.csv", float_format='%.6f') if os.path.exists("experiment_responses.csv") else pd.DataFrame()
-            # Append new data
-            updated_data = pd.concat([existing_data, st.session_state.responses])
-            # Save back to CSV
-            updated_data.to_csv("experiment_responses.csv", index=False, float_format='%.6f')
-            st.write("Your responses have been saved and appended to the existing data.")
-            st.stop()  # Stop the app
-
         if st.session_state.treatment_group and st.session_state.current_round > 10:
             participant_data = st.session_state.responses[st.session_state.responses["Participant_ID"] == st.session_state.participant_id]
             advice = get_gpt_advice(participant_data)
@@ -147,8 +137,10 @@ if st.session_state.init_done and st.session_state.current_round <= 20:
 # At the end of your main experiment logic or after the experiment completion message
 if st.session_state.current_round > 20:
     st.write("Thank you for participating in our experiment. Your responses have been recorded.")
+    
     # Convert DataFrame to CSV
     csv = st.session_state.responses.to_csv(index=False)
+    
     # Create download button
     st.download_button(
         label="Download your responses",
