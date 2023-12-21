@@ -144,9 +144,19 @@ if st.session_state.init_done and st.session_state.current_round <= 20:
             advice = get_gpt_advice(participant_data)
             st.write(advice)
 
-# Ending page logic - Enhanced for clearer completion message
+# At the end of your main experiment logic or after the experiment completion message
 if st.session_state.current_round > 20:
-    st.write("Thank you for participating in our experiment. Your responses have been recorded. Please close the browser to exit.")
+    st.write("Thank you for participating in our experiment. Your responses have been recorded.")
+    # Convert DataFrame to CSV
+    csv = st.session_state.responses.to_csv(index=False)
+    # Create download button
+    st.download_button(
+        label="Download your responses",
+        data=csv,
+        file_name="experiment_responses.csv",
+        mime="text/csv",
+    )
+    st.write("Please close the browser to exit.")
 
 
 
