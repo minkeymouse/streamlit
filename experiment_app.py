@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import random
 import openai
 import time
-import os
 
 # Initialize session state variables
 if 'init_done' not in st.session_state:
@@ -118,21 +117,31 @@ if st.session_state.init_done and st.session_state.current_round <= 20:
         # Update the DataFrame with the new row
         st.session_state.responses = pd.concat([st.session_state.responses, pd.DataFrame([new_row])])
 
-        # Update for next round or end the experiment
-        if st.session_state.current_round < 20:
-            st.session_state.current_round += 1
-            st.session_state.p_x, st.session_state.p_y, st.session_state.total_income = generate_budget_line()
-            st.session_state.start_time = time.time()
-        else:
-            st.write("Thank you for participating!")
-            st.session_state.responses.to_csv("experiment_responses.csv", float_format='%.6f')
-            st.write("Your responses have been saved.")
-            st.stop()  # Stop the app
+    # Update for next round or end the experiment
+    if st.session_state.current_round < 20:
+        st.session_state.current_round += 1
+        st.session_state.p_x, st.session_state.p_y, st.session_state.total_income = generate_budget_line()
+        st.session_state.start_time = time.time()
+    else:
+        st.write("Thank you for participating!")
+        st.session_state.responses.to_csv("experiment_responses.csv", float_format='%.6f')
+        st.write("Your responses have been saved.")
+        # Convert DataFrame to CSV for download
+        csv = st.session_state.responses.to_csv(index=False)
+        # Create download button
+        st.download_button(
+            label="Download your responses",
+            data=csv,
+            file_name="experiment_responses.csv",
+            mime="text/csv",
+        )
+        st.stop()  # Stop the app after the download button
 
-        if st.session_state.treatment_group and st.session_state.current_round > 10:
-            participant_data = st.session_state.responses[st.session_state.responses["Participant_ID"] == st.session_state.participant_id]
-            advice = get_gpt_advice(participant_data)
-            st.write(advice)
+if st.session_state.treatment_group and st.session_state.current_round > 10:
+    participant_data = st.session_state.responses[st.session_state.responses["Participant_ID"] == st.session_state.participant_id]
+    advice = get_gpt_advice(participant_data)
+    st.write(advice)
+
 
 # At the end of your main experiment logic or after the experiment completion message
 if st.session_state.current_round > 20:
